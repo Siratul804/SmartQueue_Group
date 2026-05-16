@@ -47,3 +47,33 @@ class EmergencyRequestForm(forms.ModelForm):
             raise forms.ValidationError('Unsupported file type.')
 
         return uploaded
+
+        
+class TokenBookingForm(forms.Form):
+    """Form to select booking date and optionally other parameters."""
+    booking_date = forms.DateField(
+        label='Booking Date',
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'min': timezone.localdate().isoformat()
+        }),
+        initial=timezone.localdate,
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set the minimum date to today in the widget
+        self.fields['booking_date'].widget.attrs['min'] = timezone.localdate().isoformat()
+
+    def clean_booking_date(self):
+        booking_date = self.cleaned_data.get('booking_date')
+        if booking_date < timezone.localdate():
+            raise forms.ValidationError('You cannot book a token for a past date.')
+        
+        # Limit future booking to 7 days
+        if booking_date > timezone.localdate() + timezone.timedelta(days=7):
+            raise forms.ValidationError('You can only book tokens up to 7 days in advance.')
+            
+        return booking_date

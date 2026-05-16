@@ -15,6 +15,7 @@ class Organization(models.Model):
         (TYPE_GOVT, 'Government'),
     ]
 
+
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)

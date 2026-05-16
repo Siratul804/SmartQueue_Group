@@ -86,3 +86,69 @@ class Token(models.Model):
             return 0
         avg = getattr(self.service, 'avg_service_time', None) or 0
         return int(position) * int(avg)
+
+
+    def move_to_front_of_waiting_queue(self):
+        """
+        Move this token ahead of other waiting tokens (same service/day).
+
+        Used after staff approves an emergency: becomes first waiting token
+        (immediately after any in-flight called/serving handling).
+        """
+        if self.status != self.STATUS_WAITING:
+            return
+
+        siblings = (
+            Token.objects.filter(
+                service_id=self.service_id,
+                booking_date=self.booking_date,
+                status=self.STATUS_WAITING,
+            )
+            .exclude(pk=self.pk)
+            .order_by('created_at', 'id')
+        )
+
+        first = siblings.first()
+        if first is None:
+            return
+
+        # Place this token just before the current first waiting token.
+        new_created_at = first.created_at - timedelta(microseconds=1)
+        Token.objects.filter(pk=self.pk).update(created_at=new_created_at)
+
+
+class QueueHistory(models.Model):
+    """Immutable audit log entries for queue lifecycle events."""
+
+    token = models.ForeignKey(Token, on_delete=models.CASCADE, related_name='history')
+    action = models.CharField(max_length=50)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f'{self.action} @ {self.timestamp}'
+
+
+def next_token_number_for_service(service, booking_date) -> str:
+    """Return the next formatted token number for a service on a given date."""
+    prefix = service.token_prefix
+    pattern = re.compile(rf'^{re.escape(prefix)}-(\d{{3}})$')
+
+    max_n = 0
+    for token_number in Token.objects.filter(service=service, booking_date=booking_date).values_list(
+        'token_number', flat=True
+    ):
+        match = pattern.match(token_number)
+        if match:
+            max_n = max(max_n, int(match.group(1)))
+
+    return f'{prefix}-{max_n + 1:03d}'

@@ -151,9 +151,3 @@ cython_debug/
 # PyCharm
 .idea/
 
-views.py
-admin.py
-forms.py
-models.py
-organizer_views.py
-

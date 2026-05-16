@@ -21,3 +21,4 @@ urlpatterns = [
     path('organizer/my-organizations/', organizer_views.OrganizerOrganizationListView.as_view(), name='organizer_org_list'),
     path('organizer/create-organization/', organizer_views.OrganizationCreateView.as_view(), name='organization_create'),
 ]
+#hello

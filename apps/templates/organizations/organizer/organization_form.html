@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ title|default:"Organization Settings" }} · {{ object.name|default:"New" }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% if object %}
+            <li class="breadcrumb-item"><a href="{% url 'organizations:organizer_dashboard' object.slug %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Settings</li>
+        {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'organizations:organization_list' %}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Create Organization</li>
+        {% endif %}
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-4">{{ title|default:"Organization Settings" }}</h1>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        {% for field in form %}
+                        <div class="{% if field.name == 'address' %}col-12{% else %}col-md-6{% endif %}">
+                            <label class="form-label fw-semibold small">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid gap-2 mt-4 d-md-flex justify-content-md-end">
+                        {% if object %}
+                            <a href="{% url 'organizations:organizer_dashboard' object.slug %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        {% else %}
+                            <a href="{% url 'organizations:organization_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.type !== 'checkbox' && el.type !== 'radio') {
+            el.classList.add('form-control');
+        } else {
+            el.classList.add('form-check-input');
+        }
+    });
+</script>
+{% endblock %}

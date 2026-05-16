@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Page not found · SmartQueue{% endblock %}
+{% block content %}
+    <div class="text-center py-5">
+        <h1 class="display-4 fw-bold">404</h1>
+        <p class="lead">We could not find that page.</p>
+        <a class="btn btn-primary" href="{% url 'organizations:organization_list' %}">Go home</a>
+    </div>
+{% endblock %}

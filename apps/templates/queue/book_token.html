@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Book token · SmartQueue{% endblock %}
+{% block content %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'organizations:organization_list' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organizations:organization_detail' organization.slug %}">{{ organization.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Book</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h1 class="h3">Confirm booking</h1>
+                    <p class="text-muted mb-4">
+                        You are booking a token for <strong>{{ service.name }}</strong> at
+                        <strong>{{ organization.name }}</strong>.
+                    </p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Today's bookings / daily limit</div>
+                                <div class="fs-4 fw-semibold">{{ bookings_today }} / {{ max_daily }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Current queue length (waiting)</div>
+                                <div class="fs-4 fw-semibold">{{ waiting }}</div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <div class="text-muted small">Estimated wait before you are served</div>
+                                <div class="fs-4 fw-semibold">~ {{ est_wait_minutes }} minutes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="{{ form.booking_date.id_for_label }}" class="form-label">When would you like to book?</label>
+                            {{ form.booking_date }}
+                            {% if form.booking_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.booking_date.errors.0 }}</div>
+                            {% endif %}
+                            <div class="form-text">You can book for today or up to 7 days in advance.</div>
+                        </div>
+
+                        <div class="d-flex gap-2 align-items-center">
+                            <button class="btn btn-primary btn-lg px-4" type="submit" {% if active_for_user >= 3 %}disabled{% endif %}>Confirm booking</button>
+                            <a class="btn btn-outline-secondary" href="{% url 'organizations:organization_detail' organization.slug %}">Back</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            {% if active_for_user >= 3 %}
+                <div class="alert alert-warning">
+                    You already have <strong>3 active tokens</strong>. Cancel one before you can book again.
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <strong>Tip:</strong> You can keep at most <strong>3 active tokens</strong> across all organizations.
+                    Tokens update automatically on the status page.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Live Counter · {{ organization.name }}{% endblock %}
+{% block content %}
+    <div class="row align-items-center mb-5">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="bg-primary text-white rounded-3 p-2 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h1 class="h3 fw-bold mb-0">Live Counter Dashboard</h1>
+            </div>
+            <p class="text-muted mb-0">{{ organization.name }} · Staff Operations Portal</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a class="btn btn-outline-primary px-4 rounded-pill fw-bold" href="{% url 'organizations:organization_detail' organization.slug %}">
+                View Public Page
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted x-small fw-bold text-uppercase mb-2">Waiting</div>
+                    <div id="dash-waiting" class="display-6 fw-extrabold text-primary">{{ waiting_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted x-small fw-bold text-uppercase mb-2">Served Today</div>
+                    <div id="dash-served" class="display-6 fw-extrabold text-success">{{ served_today }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted x-small fw-bold text-uppercase mb-2">Cancelled</div>
+                    <div id="dash-cancelled" class="display-6 fw-extrabold text-danger">{{ cancelled_today }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px;">
+                <div class="card-body p-4 text-center">
+                    <div class="text-muted x-small fw-bold text-uppercase mb-2">Total Tokens</div>
+                    <div id="dash-total" class="display-6 fw-extrabold text-dark">{{ total_tokens_today }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Operations -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg h-100 overflow-hidden" style="border-radius: 24px;">
+                <div class="card-header bg-primary text-white py-3 border-0 text-center">
+                    <span class="x-small fw-bold text-uppercase opacity-75">Now Serving</span>
+                </div>
+                <div class="card-body p-5 text-center">
+                    {% if serving %}
+                        <div class="display-2 fw-extrabold text-primary mb-2">{{ serving.token_number }}</div>
+                        <div class="h5 fw-bold text-dark">{{ serving.service.name }}</div>
+                        <p class="text-muted small">Customer: <span class="fw-bold">{{ serving.user.username }}</span></p>
+                        <form class="mt-4" method="post" action="{% url 'queue:complete_service' serving.id %}">
+                            {% csrf_token %}
+                            <button class="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow-sm" type="submit">Complete Service</button>
+                        </form>
+                    {% else %}
+                        <div class="py-4">
+                            <div class="display-2 text-muted opacity-25 mb-3">—</div>
+                            <p class="text-muted mb-0">No active service</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow h-100 overflow-hidden" style="border-radius: 24px; border: 2px dashed #e2e8f0 !important;">
+                <div class="card-header bg-light py-3 border-0 text-center">
+                    <span class="x-small fw-bold text-uppercase text-muted">Called (Waiting)</span>
+                </div>
+                <div class="card-body p-5 text-center">
+                    {% if called %}
+                        <div class="display-3 fw-bold text-dark mb-2">{{ called.token_number }}</div>
+                        <div class="h6 fw-bold text-secondary">{{ called.service.name }}</div>
+                        <p class="text-muted small">Customer: {{ called.user.username }}</p>
+                        <div class="d-flex justify-content-center gap-2 mt-4">
+                            <form method="post" action="{% url 'queue:start_service' called.id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold" type="submit">Start Now</button>
+                            </form>
+                            <form method="post" action="{% url 'queue:token_status' called.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="cancelled">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="btn btn-link text-muted text-decoration-none x-small fw-bold" type="submit">Mark No-Show</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="py-4">
+                            <div class="h3 text-muted opacity-25 mb-3">—</div>
+                            <div class="d-grid gap-2 col-8 mx-auto">
+                                <form method="post" action="{% url 'queue:call_next_token' organization.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-primary btn-lg py-3 rounded-pill fw-bold shadow-sm w-100" type="submit">
+                                        Call Next Token
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-1"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+                <div class="card-header bg-white py-4 px-4 border-0">
+                    <h5 class="fw-bold mb-0">Waiting Queue</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 py-3 text-muted x-small fw-bold text-uppercase">Pos</th>
+                                    <th class="py-3 text-muted x-small fw-bold text-uppercase">Token</th>
+                                    <th class="py-3 text-muted x-small fw-bold text-uppercase">Service</th>
+                                    <th class="py-3 text-muted x-small fw-bold text-uppercase">Emergency</th>
+                                    <th class="pe-4 py-3 text-muted x-small fw-bold text-uppercase text-end">Est. Wait</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in waiting_rows %}
+                                    <tr>
+                                        <td class="ps-4 py-3 text-muted small fw-bold">#{{ row.position }}</td>
+                                        <td class="py-3 fw-extrabold text-primary h6 mb-0">{{ row.token.token_number }}</td>
+                                        <td class="py-3 small fw-medium text-dark">{{ row.token.service.name }}</td>
+                                        <td class="py-3">
+                                            {% if row.token.is_emergency %}
+                                                {% if row.token.emergency_approved %}
+                                                    <span class="badge bg-success rounded-pill px-2 py-1 x-small">Approved</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1 x-small">Pending</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted opacity-25">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="pe-4 py-3 text-end fw-bold text-secondary small">{{ row.wait_minutes }}m</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted small">No waiting tokens.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+                <div class="card-header bg-white py-4 px-4 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-danger">Emergency Alerts</h5>
+                    <span class="badge bg-danger rounded-pill fw-bold" style="font-size: 0.65rem;">{{ emergency_tokens|length }} NEW</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for t in emergency_tokens %}
+                            <div class="list-group-item px-4 py-3 border-0 bg-danger bg-opacity-10 mb-2 mx-3 rounded-4 mt-2">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-extrabold text-danger h5 mb-1">{{ t.token_number }}</div>
+                                        <div class="x-small text-dark fw-bold mb-2">{{ t.service.name }} · {{ t.user.username }}</div>
+                                        <div class="x-small text-secondary fst-italic">{{ t.emergency_reason|truncatechars:100 }}</div>
+                                        {% if t.emergency_document %}
+                                            <div class="mt-2">
+                                                <a href="{{ t.emergency_document.url }}" target="_blank">
+                                                    <img src="{{ t.emergency_document.url }}" class="img-fluid rounded-3 shadow-sm border" style="max-height: 80px; width: auto; object-fit: cover;">
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <form method="post" action="{% url 'queue:approve_emergency' t.id %}">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm" type="submit">Approve</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="p-5 text-center text-muted x-small">No pending emergency requests.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm" style="border-radius: 20px; background: linear-gradient(135deg, #fff 0%, #f1f5f9 100%);">
+                <div class="card-body p-4">
+                    <div class="text-muted x-small fw-bold text-uppercase mb-1">Avg. Efficiency Today</div>
+                    <div class="h3 fw-extrabold mb-2">
+                        {% if avg_wait_minutes is not None %}
+                            {{ avg_wait_minutes }} <span class="h6 text-muted fw-normal">minutes wait</span>
+                        {% else %}
+                            <span class="text-muted opacity-50">Calculating...</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted x-small mb-0">Based on all completed tokens today.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 text-center">
+        <p class="text-muted x-small mb-0 d-flex align-items-center justify-content-center gap-2">
+            <span class="spinner-grow spinner-grow-sm text-primary" role="status"></span>
+            Auto-refreshing live data every 10 seconds
+        </p>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        setInterval(function () {
+            window.location.reload();
+        }, 10000);
+    </script>
+{% endblock %}
+

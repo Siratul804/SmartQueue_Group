@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · {{ organization.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'organizations:organizer_dashboard' organization.slug %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'organizations:organizer_service_list' organization.slug %}">Services</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h1 class="h3 mb-4">{{ title }}</h1>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text small">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Save Service</button>
+                        <a href="{% url 'organizations:organizer_service_list' organization.slug %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add bootstrap classes to form inputs
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.type !== 'checkbox' && el.type !== 'radio') {
+            el.classList.add('form-control');
+        } else {
+            el.classList.add('form-check-input');
+        }
+    });
+</script>
+{% endblock %}

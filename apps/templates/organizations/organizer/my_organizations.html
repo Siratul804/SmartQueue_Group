@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}My Organizations · SmartQueue{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="h2">My Organizations</h1>
+        <p class="text-muted">Manage all organizations you have created or are an organizer for.</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'organizations:organization_create' %}" class="btn btn-primary btn-lg">Create New Organization</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for org in organizations %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ org.name }}</h5>
+                    <span class="badge text-bg-secondary">{{ org.get_type_display }}</span>
+                </div>
+                <p class="text-muted small mb-4">{{ org.address|truncatechars:100 }}</p>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'organizations:organizer_dashboard' org.slug %}" class="btn btn-primary">
+                        Management Dashboard
+                    </a>
+                    <a href="{% url 'organizations:organization_detail' org.slug %}" class="btn btn-outline-secondary btn-sm">
+                        View Public Page
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 py-3">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Services: {{ org.services.count }}</span>
+                    <span>Status: {% if org.is_active %}<span class="text-success">Active</span>{% else %}<span class="text-danger">Inactive</span>{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div class="card bg-light border-0 py-5">
+            <div class="card-body">
+                <h3 class="h5 mb-3">No organizations found</h3>
+                <p class="text-muted mb-4">You haven't created any organizations yet. Get started by creating your first one!</p>
+                <a href="{% url 'organizations:organization_create' %}" class="btn btn-primary">Create Your First Organization</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

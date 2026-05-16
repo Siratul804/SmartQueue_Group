@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Bookings Maintenance · {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-5">
+    <div class="col">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'organizations:organizer_dashboard' organization.slug %}" class="text-decoration-none text-muted x-small fw-bold text-uppercase">Dashboard</a></li>
+                <li class="breadcrumb-item active x-small fw-bold text-uppercase" aria-current="page">Bookings</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1">Maintain Bookings</h1>
+        <p class="text-muted small mb-0">View, verify, and update full history of user bookings.</p>
+    </div>
+</div>
+
+<!-- Premium Filters -->
+<div class="card border-0 shadow-sm mb-5" style="border-radius: 20px;">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted text-uppercase mb-2">Status</label>
+                <select name="status" class="form-select border-0 bg-light rounded-3 py-2 small fw-medium">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted text-uppercase mb-2">Service</label>
+                <select name="service" class="form-select border-0 bg-light rounded-3 py-2 small fw-medium">
+                    <option value="">All Services</option>
+                    {% for service in services %}
+                    <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:"s" %}selected{% endif %}>{{ service.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label x-small fw-bold text-muted text-uppercase mb-2">Booking Date</label>
+                <input type="date" name="date" class="form-control border-0 bg-light rounded-3 py-2 small fw-medium" value="{{ request.GET.date }}">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-fill rounded-pill fw-bold py-2 shadow-sm">Filter</button>
+                <a href="?" class="btn btn-light rounded-pill px-3 py-2 fw-bold text-muted border-0">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bookings Table -->
+<div class="card border-0 shadow-sm mb-4" style="border-radius: 20px;">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted x-small fw-bold text-uppercase">Token</th>
+                        <th class="py-3 text-muted x-small fw-bold text-uppercase">User</th>
+                        <th class="py-3 text-muted x-small fw-bold text-uppercase">Service</th>
+                        <th class="py-3 text-muted x-small fw-bold text-uppercase">Schedule</th>
+                        <th class="py-3 text-muted x-small fw-bold text-uppercase text-center">Emergency</th>
+                        <th class="py-3 text-muted x-small fw-bold text-uppercase">Status</th>
+                        <th class="pe-4 py-3 text-muted x-small fw-bold text-uppercase text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in tokens %}
+                    <tr>
+                        <td class="ps-4 py-3 fw-extrabold text-primary h6 mb-0">{{ token.token_number }}</td>
+                        <td class="py-3">
+                            <div class="fw-bold text-dark small">{{ token.user.username }}</div>
+                            <div class="x-small text-muted">{{ token.user.email|truncatechars:20 }}</div>
+                        </td>
+                        <td class="py-3 small fw-medium text-secondary">{{ token.service.name }}</td>
+                        <td class="py-3">
+                            <div class="small fw-bold">{{ token.booking_date|date:"M d, Y" }}</div>
+                            <div class="x-small text-muted">{{ token.created_at|date:"H:i" }}</div>
+                        </td>
+                        <td class="py-3 text-center">
+                            {% if token.is_emergency %}
+                                <div class="d-flex flex-column align-items-center gap-1">
+                                    {% if token.emergency_approved %}
+                                        <span class="badge bg-danger rounded-pill px-2 py-1 x-small fw-bold">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1 x-small fw-bold">Pending</span>
+                                    {% endif %}
+                                    {% if token.emergency_document %}
+                                        <a href="{{ token.emergency_document.url }}" target="_blank" class="d-block mt-1">
+                                            <img src="{{ token.emergency_document.url }}" class="rounded border shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted opacity-25">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3">
+                            {% if token.status == 'waiting' %}
+                                <span class="badge bg-primary-light text-primary px-3 py-2 rounded-pill fw-bold" style="font-size: 0.6rem;">WAITING</span>
+                            {% elif token.status == 'serving' %}
+                                <span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill fw-bold" style="font-size: 0.6rem;">SERVING</span>
+                            {% elif token.status == 'completed' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-bold" style="font-size: 0.6rem;">COMPLETED</span>
+                            {% elif token.status == 'called' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill fw-bold" style="font-size: 0.6rem;">CALLED</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted px-3 py-2 rounded-pill fw-bold" style="font-size: 0.6rem;">CANCELLED</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 py-3 text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-pill px-3 fw-bold border-0" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport">
+                                    Manage
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius: 12px;">
+                                    <li><a class="dropdown-item rounded-2 small fw-bold py-2" href="{% url 'queue:token_status' token.id %}">Details</a></li>
+                                    
+                                    <li class="dropdown-divider"></li>
+                                    
+                                    {% if token.status == 'waiting' %}
+                                    <li>
+                                        <form method="post" action="{% url 'queue:token_status' token.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="called">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="dropdown-item rounded-2 small fw-bold py-2 text-warning">Call Now</button>
+                                        </form>
+                                    </li>
+                                    {% elif token.status == 'called' %}
+                                    <li>
+                                        <form method="post" action="{% url 'queue:token_status' token.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="serving">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="dropdown-item rounded-2 small fw-bold py-2 text-info">Start Service</button>
+                                        </form>
+                                    </li>
+                                    {% elif token.status == 'serving' %}
+                                    <li>
+                                        <form method="post" action="{% url 'queue:token_status' token.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="completed">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="dropdown-item rounded-2 small fw-bold py-2 text-success">Complete</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if token.status == 'waiting' and token.is_emergency and not token.emergency_approved %}
+                                    <li>
+                                        <form method="post" action="{% url 'queue:approve_emergency' token.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item rounded-2 small fw-bold py-2 text-danger">Approve Emergency</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                    
+                                    {% if token.status != 'completed' and token.status != 'cancelled' %}
+                                    <li>
+                                        <form method="post" action="{% url 'queue:token_status' token.id %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="cancelled">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="dropdown-item rounded-2 small fw-bold py-2 text-muted">Cancel</button>
+                                        </form>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted small">
+                            No bookings found matching your criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Premium Pagination -->
+{% if is_paginated %}
+<nav class="mt-5">
+    <ul class="pagination justify-content-center gap-1">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link border-0 rounded-circle text-muted" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.service %}&service={{ request.GET.service }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link border-0 rounded-pill px-4 fw-bold shadow-sm">{{ page_obj.number }} of {{ paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link border-0 rounded-circle text-muted" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.service %}&service={{ request.GET.service }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<style>
+    .x-small { font-size: 0.65rem; }
+    .page-link { color: var(--primary-color); }
+    .page-item.active .page-link { background-color: var(--primary-color); border-color: var(--primary-color); }
+    .table-responsive { min-height: 250px; }
+</style>
+{% endblock %}

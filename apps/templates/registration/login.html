@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Login · SmartQueue{% endblock %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg p-3" style="border-radius: 24px;">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="text-center mb-5">
+                        <div class="bg-primary-light text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <h1 class="h3 fw-extrabold mb-2">Welcome Back</h1>
+                        <p class="text-muted small" id="login_hint">Log in to book and manage your queue tokens.</p>
+                    </div>
+
+                    <div class="mb-5">
+                        <div class="btn-group w-100 p-1 bg-light rounded-pill" role="group">
+                            <input type="radio" class="btn-check" name="login_type" id="login_user" autocomplete="off" checked onclick="updateLoginUI('user')">
+                            <label class="btn btn-primary rounded-pill py-2 border-0" for="login_user" id="label_user">I am a User</label>
+
+                            <input type="radio" class="btn-check" name="login_type" id="login_organizer" autocomplete="off" onclick="updateLoginUI('organizer')">
+                            <label class="btn btn-light rounded-pill py-2 border-0" for="login_organizer" id="label_organizer">I am an Organizer</label>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'accounts:login' %}" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger border-0 small mb-4" style="border-radius: 12px;">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                        
+                        {% for field in form %}
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                <div class="custom-input-group">
+                                    {{ field }}
+                                </div>
+                                {% for error in field.errors %}
+                                    <div class="text-danger x-small mt-1 fw-bold">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+
+                        {% if next %}
+                            <input type="hidden" name="next" value="{{ next }}">
+                        {% endif %}
+
+                        <div class="mt-5 d-grid">
+                            <button class="btn btn-primary btn-lg py-3 rounded-pill fw-bold shadow-sm" type="submit" id="loginBtn">Login as User</button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-5 text-center">
+                        <p class="mb-0 text-muted small">
+                            New to SmartQueue? <a href="{% url 'accounts:signup' %}" class="text-primary fw-bold text-decoration-none">Create an account</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .custom-input-group input {
+            border: 0;
+            background-color: #f1f5f9;
+            padding: 0.8rem 1.25rem;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        .custom-input-group input:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 3px var(--primary-light);
+            outline: none;
+        }
+        .btn-check:checked + label.btn-primary {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-check:not(:checked) + label.btn-light {
+            background-color: transparent !important;
+            color: var(--text-muted) !important;
+        }
+    </style>
+
+    <script>
+        function updateLoginUI(type) {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginHint = document.getElementById('login_hint');
+            const labelUser = document.getElementById('label_user');
+            const labelOrg = document.getElementById('label_organizer');
+            
+            if (type === 'organizer') {
+                loginBtn.textContent = 'Login as Organizer';
+                loginHint.textContent = 'Log in to manage your organization and services.';
+                labelOrg.classList.replace('btn-light', 'btn-primary');
+                labelUser.classList.replace('btn-primary', 'btn-light');
+            } else {
+                loginBtn.textContent = 'Login as User';
+                loginHint.textContent = 'Log in to book and manage your queue tokens.';
+                labelUser.classList.replace('btn-light', 'btn-primary');
+                labelOrg.classList.replace('btn-primary', 'btn-light');
+            }
+        }
+    </script>
+{% endblock %}
+

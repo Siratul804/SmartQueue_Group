@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}My Tokens · SmartQueue{% endblock %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 fw-bold mb-0">My Tokens</h1>
+                <a class="btn btn-primary" href="{% url 'organizations:organization_list' %}">
+                    Book New Token
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-white border-0 p-0">
+                    <ul class="nav nav-tabs px-4 pt-3" id="tokenTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-pane" type="button"
+                                    role="tab">Active Tokens
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button"
+                                    role="tab">History
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-0">
+                    <div class="tab-content">
+                        <!-- Active Pane -->
+                        <div class="tab-pane fade show active" id="active-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4 py-3 text-muted small text-uppercase fw-bold">Token</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Organization</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Service</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Status</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold text-center">Position</th>
+                                        <th class="pe-4 py-3"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for t in active_tokens %}
+                                        <tr>
+                                            <td class="ps-4 py-3">
+                                                <div class="fw-bold text-primary fs-5">{{ t.token_number }}</div>
+                                            </td>
+                                            <td class="py-3 fw-medium">{{ t.organization.name }}</td>
+                                            <td class="py-3">{{ t.service.name }}</td>
+                                            <td class="py-3">
+                                                {% if t.status == 'waiting' %}
+                                                    <span class="badge bg-primary-light text-primary status-badge">Waiting</span>
+                                                {% elif t.status == 'called' %}
+                                                    <span class="badge bg-success text-white status-badge">Called</span>
+                                                {% elif t.status == 'serving' %}
+                                                    <span class="badge bg-info text-white status-badge">Serving</span>
+                                                {% else %}
+                                                    <span class="badge bg-light text-muted status-badge">{{ t.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="py-3 text-center fw-bold">
+                                                {% if t.status == 'waiting' %}
+                                                    {% with pos=t.get_current_position %}
+                                                        <span class="text-primary fs-5">{% if pos %}{{ pos }}{% else %}—{% endif %}</span>
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="pe-4 py-3 text-end">
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <a class="btn btn-sm btn-outline-primary rounded-pill px-3" href="{% url 'queue:token_status' t.id %}">
+                                                        Track
+                                                    </a>
+                                                    {% if t.status == 'waiting' %}
+                                                        <form method="post" action="{% url 'queue:cancel_token' t.id %}"
+                                                              onsubmit="return confirm('Cancel this token?');">
+                                                            {% csrf_token %}
+                                                            <button class="btn btn-sm btn-outline-secondary border-0 text-muted rounded-pill" type="submit">
+                                                                Cancel
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <div class="mb-2">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-muted opacity-25"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                                                </div>
+                                                No active tokens found.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- History Pane -->
+                        <div class="tab-pane fade" id="history-pane" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4 py-3 text-muted small text-uppercase fw-bold">Token</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Organization</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Service</th>
+                                        <th class="py-3 text-muted small text-uppercase fw-bold">Status</th>
+                                        <th class="pe-4 py-3"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for t in history_tokens %}
+                                        <tr>
+                                            <td class="ps-4 py-3">
+                                                <div class="fw-bold text-muted">{{ t.token_number }}</div>
+                                            </td>
+                                            <td class="py-3">{{ t.organization.name }}</td>
+                                            <td class="py-3">{{ t.service.name }}</td>
+                                            <td class="py-3">
+                                                {% if t.status == 'completed' %}
+                                                    <span class="badge bg-light text-success status-badge border border-success border-opacity-10">Completed</span>
+                                                {% else %}
+                                                    <span class="badge bg-light text-muted status-badge">{{ t.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="pe-4 py-3 text-end">
+                                                <a class="btn btn-sm btn-link text-primary text-decoration-none fw-bold" href="{% url 'queue:token_status' t.id %}">
+                                                    Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-5 text-muted">No history available.</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Create Account · SmartQueue{% endblock %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card border-0 shadow-lg p-3" style="border-radius: 24px;">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="text-center mb-5">
+                        <div class="bg-primary-light text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-4" style="width: 64px; height: 64px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <h1 class="h3 fw-extrabold mb-2">Create Account</h1>
+                        <p class="text-muted small">Join SmartQueue to manage your visits efficiently.</p>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <div class="btn-group w-100 p-1 bg-light rounded-4" role="group" aria-label="Role selection">
+                            <input type="radio" class="btn-check" name="role_toggle" id="role_user" autocomplete="off" checked onclick="setRole('user')">
+                            <label class="btn btn-primary rounded-4 py-3 border-0 flex-fill" for="role_user" id="label_user">
+                                <span class="d-block fw-bold mb-1">Public User</span>
+                                <span class="x-small opacity-75">I want to book tokens</span>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="role_toggle" id="role_organizer" autocomplete="off" onclick="setRole('organizer')">
+                            <label class="btn btn-light rounded-4 py-3 border-0 flex-fill" for="role_organizer" id="label_organizer">
+                                <span class="d-block fw-bold mb-1">Organizer</span>
+                                <span class="x-small opacity-75">I want to manage queues</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <form method="post" novalidate id="signupForm">
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger border-0 small mb-4" style="border-radius: 12px;">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                        
+                        <div class="row g-4">
+                            {% for field in form %}
+                                <div class="{% if field.name == 'role' %}d-none{% else %}col-md-6{% endif %}">
+                                    {% if field.name != 'role' %}
+                                        <label class="form-label fw-bold small text-muted text-uppercase mb-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        <div class="custom-input-group">
+                                            {{ field }}
+                                        </div>
+                                        {% if field.help_text %}
+                                            <div class="form-text x-small mt-1">{{ field.help_text|safe }}</div>
+                                        {% endif %}
+                                        {% for error in field.errors %}
+                                            <div class="text-danger x-small mt-1 fw-bold">{{ error }}</div>
+                                        {% endfor %}
+                                    {% else %}
+                                        {{ field }}
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-5 d-grid">
+                            <button class="btn btn-primary btn-lg py-3 rounded-pill fw-bold shadow-sm" type="submit" id="submitBtn">Register as Public User</button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-5 text-center">
+                        <p class="mb-0 text-muted small">
+                            Already have an account? <a href="{% url 'accounts:login' %}" class="text-primary fw-bold text-decoration-none">Log in here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .custom-input-group input {
+            border: 0;
+            background-color: #f1f5f9;
+            padding: 0.8rem 1.25rem;
+            border-radius: 12px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        .custom-input-group input:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 3px var(--primary-light);
+            outline: none;
+        }
+        .btn-check:checked + label.btn-primary {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-check:not(:checked) + label.btn-light {
+            background-color: transparent !important;
+            color: var(--text-muted) !important;
+        }
+        .x-small { font-size: 0.75rem; }
+    </style>
+
+    <script>
+        function setRole(role) {
+            const roleRadios = document.querySelectorAll('input[name="role"]');
+            roleRadios.forEach(radio => {
+                if (radio.value === role) {
+                    radio.checked = true;
+                }
+            });
+
+            const submitBtn = document.getElementById('submitBtn');
+            const labelUser = document.getElementById('label_user');
+            const labelOrg = document.getElementById('label_organizer');
+
+            if (role === 'organizer') {
+                submitBtn.textContent = 'Register as Organizer';
+                labelOrg.classList.replace('btn-light', 'btn-primary');
+                labelUser.classList.replace('btn-primary', 'btn-light');
+            } else {
+                submitBtn.textContent = 'Register as Public User';
+                labelUser.classList.replace('btn-light', 'btn-primary');
+                labelOrg.classList.replace('btn-primary', 'btn-light');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            setRole('user');
+        });
+    </script>
+{% endblock %}
+

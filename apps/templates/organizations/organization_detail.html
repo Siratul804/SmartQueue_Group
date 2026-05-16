@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ organization.name }} · SmartQueue{% endblock %}
+{% block content %}
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'organizations:organization_list' %}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ organization.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-md p-2" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <span class="badge bg-primary-light text-primary text-capitalize fw-bold mb-2 px-3 py-2 rounded-pill">{{ organization.get_type_display }}</span>
+                        <h1 class="h3 fw-bold mb-3">{{ organization.name }}</h1>
+                    </div>
+                    
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="bg-light p-2 rounded-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div>
+                            <div class="small fw-bold text-muted text-uppercase mb-1">Address</div>
+                            <p class="mb-0 text-secondary">{{ organization.address }}</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="bg-light p-2 rounded-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                        </div>
+                        <div>
+                            <div class="small fw-bold text-muted text-uppercase mb-1">Contact</div>
+                            <p class="mb-0 text-secondary">{{ organization.phone }}</p>
+                            <p class="mb-0 text-secondary small">{{ organization.email }}</p>
+                        </div>
+                    </div>
+
+                    {% if is_organizer or user.is_staff %}
+                        <div class="mt-4 pt-4 border-top">
+                            <div class="small fw-bold text-muted text-uppercase mb-3">Management</div>
+                            <div class="d-grid gap-2">
+                                {% if is_organizer %}
+                                <a class="btn btn-outline-primary fw-bold" href="{% url 'organizations:organizer_dashboard' organization.slug %}">
+                                    Organizer Portal
+                                </a>
+                                {% endif %}
+                                <a class="btn btn-outline-dark fw-bold" href="{% url 'queue:admin_dashboard' organization.id %}">
+                                    Live Counter View
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-4 p-3 bg-light rounded-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small text-muted fw-medium">Daily Capacity</span>
+                            <span class="fw-bold text-main">{{ organization.max_daily_tokens }} tokens</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <h2 class="h4 fw-bold mb-4 d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                Available Services
+            </h2>
+            <div class="row row-cols-1 g-3">
+                {% for row in service_cards %}
+                    <div class="col">
+                        <div class="card h-100 border-0 shadow-sm hover-translate">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h3 class="h5 fw-bold mb-2">{{ row.service.name }}</h3>
+                                        <div class="d-flex flex-wrap gap-3">
+                                            <div class="d-flex align-items-center gap-1 text-muted small">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                                Avg. {{ row.service.avg_service_time }} mins
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 text-primary small fw-bold">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                                {{ row.waiting_today }} waiting now
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                        {% if user.is_authenticated %}
+                                            {% if user.profile.role == 'user' or user.is_staff %}
+                                                <a class="btn btn-primary px-4 py-2 rounded-pill fw-bold"
+                                                   href="{% url 'queue:book_token' organization.slug row.service.id %}">
+                                                    Book Now
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-light text-muted p-2 rounded-3">Staff/Organizer Mode</span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% url 'queue:book_token' organization.slug row.service.id as book_url %}
+                                            <a class="btn btn-primary px-4 py-2 rounded-pill fw-bold"
+                                               href="{% url 'accounts:login' %}?next={{ book_url|urlencode }}">
+                                                Login to Book
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col text-center py-5">
+                        <div class="bg-light d-inline-block p-4 rounded-circle mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-muted opacity-50"><path d="m15 5 4 4"/><path d="M13 7 8.7 2.7a2 2 0 0 0-2.8 0L3.3 5.3a2 2 0 0 0 0 2.8L7.6 12.4a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8Z"/><path d="m18 14-4 4"/><path d="M16 16 11.7 11.7a2 2 0 0 0-2.8 0L6.3 14.3a2 2 0 0 0 0 2.8L10.6 21.4a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8Z"/></svg>
+                        </div>
+                        <h4 class="text-muted">No services available</h4>
+                        <p class="text-muted small">This organization hasn't added any services yet.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .hover-translate {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-translate:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md) !important;
+        }
+    </style>
+{% endblock %}
+

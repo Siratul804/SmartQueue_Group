@@ -168,3 +168,113 @@ class BookTokenView(UserRequiredMixin, TemplateView):
             f'Your token {token.token_number} has been booked for {booking_date}.',
         )
         return redirect('queue:token_status', token_id=token.pk)
+
+
+class TokenStatusView(LoginRequiredMixin, DetailView):
+    """Display live token status; supports JSON polling for lightweight refresh."""
+    model = Token
+    pk_url_kwarg = 'token_id'
+    template_name = 'queue/token_status.html'
+    context_object_name = 'token'
+
+    def get_queryset(self):
+        return Token.objects.select_related('organization', 'service')
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        is_organizer = self.object.organization.organizers.filter(pk=request.user.id).exists()
+        
+        if not (request.user.is_staff or self.object.user_id == request.user.id or is_organizer):
+            raise PermissionDenied('You do not have permission to view this token.')
+
+        booking_date = self.object.booking_date
+        total_waiting = Token.objects.filter(
+            service_id=self.object.service_id,
+            booking_date=booking_date,
+            status=Token.STATUS_WAITING,
+        ).count()
+
+        position = self.object.get_current_position() or 0
+        wait_minutes = self.object.get_wait_time()
+
+        progress = 0
+        if total_waiting > 0 and position:
+            # Progress represents how far through the queue you are.
+            # If you are at position 1, you are almost there.
+            progress = min(100, int(round(((total_waiting - position + 1) / total_waiting) * 100)))
+
+        if _wants_json(request):
+            return JsonResponse({
+                'status': self.object.status,
+                'position': position,
+                'wait_minutes': wait_minutes,
+                'total_waiting': total_waiting,
+                'progress': progress,
+                'token_number': self.object.token_number,
+                'is_emergency': self.object.is_emergency,
+                'emergency_approved': self.object.emergency_approved,
+            })
+
+        context = self.get_context_data(
+            object=self.object,
+            position=position,
+            wait_minutes=wait_minutes,
+            total_waiting=total_waiting,
+            progress=progress,
+            is_organizer=is_organizer,
+            is_staff_or_organizer=(request.user.is_staff or is_organizer),
+        )
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        is_organizer = self.object.organization.organizers.filter(pk=request.user.id).exists()
+        
+        if not (request.user.is_staff or is_organizer):
+            raise PermissionDenied('Only staff or organizers can manually update token status.')
+
+        new_status = request.POST.get('status')
+        if new_status in [choice[0] for choice in Token.STATUS_CHOICES]:
+            old_status = self.object.status
+            self.object.status = new_status
+            
+            if new_status == Token.STATUS_CALLED and old_status != Token.STATUS_CALLED:
+                self.object.called_at = timezone.now()
+            elif new_status == Token.STATUS_COMPLETED and old_status != Token.STATUS_COMPLETED:
+                self.object.completed_at = timezone.now()
+                
+            self.object.save()
+            _log_history(self.object, f'status_changed_{new_status}', user=request.user, notes=f'Manually changed from {old_status}')
+            messages.success(request, f'Token status updated to {self.object.get_status_display()}.')
+        else:
+            messages.error(request, 'Invalid status.')
+
+        next_url = request.POST.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('queue:token_status', token_id=self.object.pk)
+
+
+class MyTokensView(UserRequiredMixin, ListView):
+    """List the current user's tokens split into active and historical sections."""
+    model = Token
+    template_name = 'queue/my_tokens.html'
+    context_object_name = 'tokens'
+
+    def get_queryset(self):
+        return Token.objects.filter(user=self.request.user).select_related('organization', 'service')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tokens = context['tokens']
+        active_statuses = [Token.STATUS_WAITING, Token.STATUS_CALLED, Token.STATUS_SERVING]
+        
+        active = [t for t in tokens if t.status in active_statuses]
+        history = [t for t in tokens if t.status not in active_statuses]
+
+        active.sort(key=lambda t: t.created_at)
+        history.sort(key=lambda t: t.created_at, reverse=True)
+
+        context['active_tokens'] = active
+        context['history_tokens'] = history
+        return context

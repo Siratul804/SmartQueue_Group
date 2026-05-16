@@ -55,4 +55,34 @@ class Token(models.Model):
     def __str__(self):
         return f'{self.token_number} ({self.status})'
 
-    
+    def get_current_position(self):
+        """
+        Return 1-based queue position among waiting tokens for this service/day.
+
+        Returns None when this token is not currently waiting.
+        """
+        if self.status != self.STATUS_WAITING:
+            return None
+
+        waiting_ids = list(
+            Token.objects.filter(
+                service_id=self.service_id,
+                booking_date=self.booking_date,
+                status=self.STATUS_WAITING,
+            )
+            .order_by('created_at', 'id')
+            .values_list('id', flat=True)
+        )
+
+        try:
+            return waiting_ids.index(self.id) + 1
+        except ValueError:
+            return None
+
+    def get_wait_time(self):
+        """Estimated minutes until service based on position and average service time."""
+        position = self.get_current_position()
+        if position is None:
+            return 0
+        avg = getattr(self.service, 'avg_service_time', None) or 0
+        return int(position) * int(avg)

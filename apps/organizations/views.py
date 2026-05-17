@@ -76,3 +76,4 @@ class OrganizationDetailView(DetailView):
         context['service_cards'] = service_cards
         context['is_organizer'] = is_organizer
         return context
+# hello everyone
